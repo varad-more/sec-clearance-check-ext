@@ -29,12 +29,21 @@ chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
     "successfactors.com",
     "jazz.co",
     "jazzhr.com",
+    "dover.com",
     "rippling.com",
     "ycombinator.com",
   ];
 
-  const url = new URL(tab.url);
-  const isJobSite = jobSiteDomains.some((d) => url.hostname.endsWith(d));
+  let hostname;
+  try {
+    hostname = new URL(tab.url).hostname;
+  } catch {
+    statusEl.textContent = "Cannot parse page URL.";
+    statusEl.className = "status inactive";
+    return;
+  }
+
+  const isJobSite = jobSiteDomains.some((d) => hostname.endsWith(d));
 
   if (!isJobSite) {
     statusEl.textContent = "Not a tracked job site. Extension is idle.";
@@ -42,7 +51,6 @@ chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
     return;
   }
 
-  // Try to get results from content script
   chrome.tabs.sendMessage(tab.id, { type: "getResults" }, (response) => {
     if (chrome.runtime.lastError || !response) {
       statusEl.textContent = "Scanning active on this site. Refresh to re-scan.";
@@ -51,7 +59,9 @@ chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
     }
 
     if (response.matchCount > 0) {
-      statusEl.textContent = `Found ${response.matchCount} restriction flag(s): ${[...response.phrases].join(", ")}`;
+      const phrases = response.phrases.join(", ");
+      statusEl.textContent =
+        "Found " + response.matchCount + " restriction flag(s): " + phrases;
       statusEl.className = "status alert";
     } else {
       statusEl.textContent = "No restriction flags found on this page.";

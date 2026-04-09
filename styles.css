@@ -1,17 +1,15 @@
-mark.clearance-check-highlight {
+mark.clearance-check-ext-highlight {
   background-color: #ff4d4d;
-  color: #fff;
+  color: #fff !important;
   padding: 1px 4px;
   border-radius: 3px;
   font-weight: bold;
   box-shadow: 0 0 4px rgba(255, 0, 0, 0.4);
+  text-decoration: none;
 }
 
-#clearance-check-banner {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
+#clearance-check-ext-banner {
+  position: relative;
   z-index: 2147483647;
   background: #d32f2f;
   color: #fff;
@@ -19,24 +17,29 @@ mark.clearance-check-highlight {
   font-size: 14px;
   padding: 10px 16px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-  animation: clearance-check-slide-in 0.3s ease-out;
+  animation: clearance-check-ext-slide-in 0.3s ease-out;
+  line-height: 1.4;
 }
 
-.clearance-check-banner-header {
+.clearance-check-ext-banner-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
   font-weight: bold;
   font-size: 15px;
 }
 
-.clearance-check-banner-details {
+.clearance-check-ext-banner-icon {
+  margin-right: 6px;
+  font-size: 18px;
+}
+
+.clearance-check-ext-banner-details {
   margin-top: 4px;
   font-size: 13px;
   opacity: 0.9;
 }
 
-.clearance-check-close {
+.clearance-check-ext-close {
   background: none;
   border: none;
   color: #fff;
@@ -45,17 +48,20 @@ mark.clearance-check-highlight {
   padding: 0 4px;
   line-height: 1;
   opacity: 0.8;
+  margin-left: auto;
 }
 
-.clearance-check-close:hover {
+.clearance-check-ext-close:hover {
   opacity: 1;
 }
 
-@keyframes clearance-check-slide-in {
+@keyframes clearance-check-ext-slide-in {
   from {
+    opacity: 0;
     transform: translateY(-100%);
   }
   to {
+    opacity: 1;
     transform: translateY(0);
   }
 }

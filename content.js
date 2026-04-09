@@ -18,35 +18,39 @@
     /\bwithout\s+(?:visa\s+)?sponsorship\b/gi,
     /\bnot\s+(?:offer|provide)\s+(?:visa\s+)?sponsorship\b/gi,
     /\bUS\s+persons?\s+only\b/gi,
+    /\bU\.?S\.?\s+person\b/gi,
 
     // Security clearance
     /\bsecret\s+clearance\b/gi,
-    /\btop\s+secret\b/gi,
+    /\btop\s+secret(?:\s+clearance|\s+\/\s*SCI|\/SCI)?\b/gi,
     /\bTS[\s/]SCI\b/gi,
     /\bsecurity\s+clearance\b/gi,
     /\bactive\s+clearance\b/gi,
-    /\bclearance\s+required\b/gi,
+    /\bclearance\s+(?:is\s+)?required\b/gi,
     /\bmust\s+(?:hold|have|possess|maintain|obtain)\s+(?:a\s+)?(?:active\s+)?(?:security\s+)?clearance\b/gi,
     /\beligibl[ey]\s+(?:for|to\s+obtain)\s+(?:a\s+)?(?:security\s+)?clearance\b/gi,
     /\bDoD\s+clearance\b/gi,
     /\bSCI\s+access\b/gi,
-    /\bpublic\s+trust\b/gi,
+    /\bpublic\s+trust\s+(?:clearance|investigation|determination|position)\b/gi,
     /\bsensitive\s+compartmented\s+information\b/gi,
     /\bconfidential\s+clearance\b/gi,
+    /\bPolygraph\s+(?:required|clearance)\b/gi,
+    /\bCI\s+poly(?:graph)?\b/gi,
+    /\bFull\s+Scope\s+Poly(?:graph)?\b/gi,
 
-    // Government / ITAR / EAR
+    // Government / ITAR / EAR / Export
     /\bITAR\b/g,
-    /\bEAR\b/g,
-    /\bexport[\s-]?control(?:led)?\b/gi,
+    /\bEAR\s+(?:regulat|restrict|compli|controlled)\b/gi,
+    /\bexport[\s-]?control(?:led|s)?\b/gi,
     /\bgovernment\s+contract\b/gi,
     /\bfederal\s+contract\b/gi,
-    /\bNational\s+security\b/gi,
   ];
 
-  const BANNER_ID = "clearance-check-banner";
-  const HIGHLIGHT_CLASS = "clearance-check-highlight";
+  const BANNER_ID = "clearance-check-ext-banner";
+  const HIGHLIGHT_CLASS = "clearance-check-ext-highlight";
 
-  // Walk all text nodes in the body
+  let latestResults = { matchCount: 0, matchedPhrases: new Set() };
+
   function getTextNodes(root) {
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
       acceptNode(node) {
@@ -54,7 +58,10 @@
         if (tag === "SCRIPT" || tag === "STYLE" || tag === "NOSCRIPT") {
           return NodeFilter.FILTER_REJECT;
         }
-        if (node.parentElement?.closest(`#${BANNER_ID}`)) {
+        if (node.parentElement?.closest("#" + BANNER_ID)) {
+          return NodeFilter.FILTER_REJECT;
+        }
+        if (node.parentElement?.classList.contains(HIGHLIGHT_CLASS)) {
           return NodeFilter.FILTER_REJECT;
         }
         return NodeFilter.FILTER_ACCEPT;
@@ -65,15 +72,15 @@
     return nodes;
   }
 
-  function highlightMatches(textNode, pattern) {
+  function highlightMatch(textNode, pattern) {
     const text = textNode.nodeValue;
     pattern.lastIndex = 0;
     const match = pattern.exec(text);
     if (!match) return false;
 
-    const span = document.createElement("mark");
-    span.className = HIGHLIGHT_CLASS;
-    span.title = "Potential restriction flag";
+    const mark = document.createElement("mark");
+    mark.className = HIGHLIGHT_CLASS;
+    mark.title = "Restriction flag detected by Clearance Check";
 
     const before = text.substring(0, match.index);
     const matched = text.substring(match.index, match.index + match[0].length);
@@ -81,21 +88,29 @@
 
     const parent = textNode.parentNode;
     if (before) parent.insertBefore(document.createTextNode(before), textNode);
-    span.textContent = matched;
-    parent.insertBefore(span, textNode);
+    mark.textContent = matched;
+    parent.insertBefore(mark, textNode);
     if (after) parent.insertBefore(document.createTextNode(after), textNode);
     parent.removeChild(textNode);
 
     return true;
   }
 
-  function scan() {
-    // Remove previous results
-    document.querySelectorAll(`.${HIGHLIGHT_CLASS}`).forEach((el) => {
+  function clearPreviousResults() {
+    document.querySelectorAll("." + HIGHLIGHT_CLASS).forEach((el) => {
       const text = document.createTextNode(el.textContent);
       el.parentNode.replaceChild(text, el);
     });
     document.getElementById(BANNER_ID)?.remove();
+  }
+
+  function scan() {
+    if (!document.body) return;
+
+    clearPreviousResults();
+
+    // Normalize the DOM after clearing highlights (merge adjacent text nodes)
+    document.body.normalize();
 
     const matchedPhrases = new Set();
     let matchCount = 0;
@@ -105,21 +120,20 @@
       for (const pattern of PATTERNS) {
         pattern.lastIndex = 0;
         if (pattern.test(node.nodeValue || "")) {
-          // Reset and do the highlight (which splits the node, so break inner loop)
           pattern.lastIndex = 0;
           const matched = pattern.exec(node.nodeValue)?.[0];
           if (matched) {
             matchedPhrases.add(matched);
             matchCount++;
-            highlightMatches(node, pattern);
-            break; // node was split, move to next
+            highlightMatch(node, pattern);
+            break; // node was split — move to next node
           }
         }
       }
     }
 
+    latestResults = { matchCount, matchedPhrases };
     showBanner(matchCount, matchedPhrases);
-    return { matchCount, matchedPhrases };
   }
 
   function showBanner(count, phrases) {
@@ -129,47 +143,57 @@
     banner.id = BANNER_ID;
 
     const header = document.createElement("div");
-    header.className = "clearance-check-banner-header";
+    header.className = "clearance-check-ext-banner-header";
+
+    const icon = document.createElement("span");
+    icon.className = "clearance-check-ext-banner-icon";
+    icon.textContent = "\u26A0";
 
     const title = document.createElement("span");
-    title.textContent = `Restriction flags found: ${count}`;
+    title.textContent = " Restriction flags found: " + count;
 
     const closeBtn = document.createElement("button");
-    closeBtn.className = "clearance-check-close";
+    closeBtn.className = "clearance-check-ext-close";
     closeBtn.textContent = "\u00d7";
+    closeBtn.setAttribute("aria-label", "Dismiss banner");
     closeBtn.addEventListener("click", () => banner.remove());
 
+    header.appendChild(icon);
     header.appendChild(title);
     header.appendChild(closeBtn);
     banner.appendChild(header);
 
     if (phrases.size > 0) {
       const details = document.createElement("div");
-      details.className = "clearance-check-banner-details";
-      details.textContent = [...phrases].join(", ");
+      details.className = "clearance-check-ext-banner-details";
+      details.textContent = [...phrases].join("  \u2022  ");
       banner.appendChild(details);
     }
 
-    document.body.appendChild(banner);
+    document.body.prepend(banner);
   }
 
-  // Run the scan
-  const results = scan();
+  // Initial scan
+  scan();
 
-  // Re-scan when page content changes (SPAs like Workday)
+  // Re-scan on SPA navigation / dynamic content loads
   let debounceTimer;
   const observer = new MutationObserver(() => {
     clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(scan, 1500);
+    debounceTimer = setTimeout(() => {
+      observer.disconnect();
+      scan();
+      observer.observe(document.body, { childList: true, subtree: true });
+    }, 1500);
   });
   observer.observe(document.body, { childList: true, subtree: true });
 
-  // Listen for popup messages
+  // Respond to popup queries
   chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     if (msg.type === "getResults") {
       sendResponse({
-        matchCount: results.matchCount,
-        phrases: [...results.matchedPhrases],
+        matchCount: latestResults.matchCount,
+        phrases: [...latestResults.matchedPhrases],
       });
     }
   });
