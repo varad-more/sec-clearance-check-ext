@@ -4,6 +4,12 @@
   "version": "1.0",
   "description": "Highlights job postings requiring US citizenship, security clearance, or similar restrictions.",
   "permissions": ["activeTab"],
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "clearance-check@sec-clearance-check-ext",
+      "strict_min_version": "109.0"
+    }
+  },
   "icons": {
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"

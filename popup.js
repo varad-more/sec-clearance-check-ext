@@ -1,4 +1,6 @@
-chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+const api = typeof browser !== "undefined" ? browser : chrome;
+
+api.tabs.query({ active: true, currentWindow: true }, (tabs) => {
   const tab = tabs[0];
   const statusEl = document.getElementById("status");
 
@@ -51,8 +53,8 @@ chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
     return;
   }
 
-  chrome.tabs.sendMessage(tab.id, { type: "getResults" }, (response) => {
-    if (chrome.runtime.lastError || !response) {
+  api.tabs.sendMessage(tab.id, { type: "getResults" }, (response) => {
+    if ((chrome?.runtime?.lastError || browser?.runtime?.lastError) || !response) {
       statusEl.textContent = "Scanning active on this site. Refresh to re-scan.";
       statusEl.className = "status active";
       return;

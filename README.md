@@ -59,7 +59,7 @@ The extension only activates on known job board domains — it stays completely 
 
 ## Installation
 
-### Step 1: Download the extension
+### Download the extension
 
 Clone this repository or download and extract the ZIP:
 
@@ -69,27 +69,22 @@ git clone https://github.com/your-username/sec-clearance-check-ext.git
 
 Or click **Code > Download ZIP** on GitHub and extract it to a folder.
 
-### Step 2: Open Chrome Extensions page
+### Chrome / Edge / Brave
 
-Open Chrome and navigate to:
+1. Navigate to `chrome://extensions/` (or `edge://extensions/` / `brave://extensions/`)
+2. Enable **Developer mode** (top-right toggle)
+3. Click **Load unpacked**
+4. Select the `sec-clearance-check-ext` folder (the one containing `manifest.json`)
+5. (Optional) Click the puzzle piece icon in the toolbar and pin the extension
 
-```
-chrome://extensions/
-```
+### Firefox
 
-### Step 3: Enable Developer Mode
+1. Navigate to `about:debugging#/runtime/this-firefox`
+2. Click **Load Temporary Add-on...**
+3. Select the `manifest.json` file inside the `sec-clearance-check-ext` folder
+4. The extension will be active until you restart Firefox
 
-Toggle the **Developer mode** switch in the top-right corner of the extensions page.
-
-### Step 4: Load the extension
-
-1. Click the **Load unpacked** button that appears after enabling developer mode.
-2. In the file picker, select the `sec-clearance-check-ext` folder (the one containing `manifest.json`).
-3. The extension will appear in your extensions list.
-
-### Step 5: Pin the extension (optional)
-
-Click the puzzle piece icon in the Chrome toolbar and pin **Clearance & Citizenship Check** for easy access to the popup status panel.
+> **Note:** Temporary add-ons are removed on restart. For permanent installation, the extension needs to be signed via [Firefox Add-on Developer Hub](https://addons.mozilla.org/developers/) (free).
 
 ## Usage
 

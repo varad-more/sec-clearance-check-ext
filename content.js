@@ -189,7 +189,8 @@
   observer.observe(document.body, { childList: true, subtree: true });
 
   // Respond to popup queries
-  chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
+  const api = typeof browser !== "undefined" ? browser : chrome;
+  api.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     if (msg.type === "getResults") {
       sendResponse({
         matchCount: latestResults.matchCount,
